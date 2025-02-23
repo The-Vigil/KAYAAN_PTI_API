@@ -368,7 +368,7 @@ async def async_handler(job):
         ]
         
         completion = openai_client.chat.completions.create(
-            model="gpt-4-vision-preview",
+            model="gpt-4o-mini",
             messages=messages,
             temperature=0.0,
             max_tokens=500,
