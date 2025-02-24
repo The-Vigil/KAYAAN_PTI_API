@@ -4,9 +4,10 @@ from openai import OpenAI
 import os
 import time
 import json
-
+from dotenv import load_dotenv
+load_dotenv()
 # Initialize OpenAI client
-openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 # %% Component Prompt Registry
 PROMPT_REGISTRY = {
@@ -367,10 +368,10 @@ async def async_handler(job):
             }
         ]
         
-        completion = openai_client.chat.completions.create(
-            model="gpt-4-turbo",
+        completion = client.chat.completions.create(
+            model="gpt-4o",
             messages=messages,
-            temperature=0.0,
+            temperature=0.1,
             max_tokens=500,
             response_format={"type": "json_object"}
         )
