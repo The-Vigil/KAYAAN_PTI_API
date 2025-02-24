@@ -330,47 +330,147 @@ Return JSON: {
     }
 }
 
+# async def async_handler(job):
+#     try:
+#         start_time = time.time()
+#         print("\n=== New Vehicle Inspection Request Started ===")
+        
+#         # Get input from job
+#         job_input = job["input"]
+        
+#         # Validate input
+#         if "image" not in job_input or "component_type" not in job_input:
+#             raise ValueError("Missing required input: 'image' and 'component_type' required")
+            
+#         component_type = job_input["component_type"]
+#         if component_type not in PROMPT_REGISTRY:
+#             raise ValueError(f"Unsupported component type: {component_type}")
+
+#         # Get image
+#         image_base64 = job_input["image"]
+        
+#         # Vision API Analysis
+#         print("Starting vision analysis...")
+#         analysis_start = time.time()
+        
+#         messages = [
+#             {
+#                 "role": "system",
+#                 "content": PROMPT_REGISTRY[component_type]["system_prompt"]
+#             },
+#             {
+#                 "role": "user",
+#                 "content": [
+#                     {"type": "image_url", "image_url": {
+#                         "url": f"data:image/jpeg;base64,{image_base64}",
+#                         "detail": "high"
+#                     }},
+#                     {"type": "text", "text": "Analyze this image and provide the required JSON output."}
+#                 ]
+#             }
+#         ]
+#         try:
+        
+#             completion = client.chat.completions.create(
+#                 model="gpt-4o",
+#                 messages=messages,
+#                 temperature=0.1,
+#                 max_tokens=500,
+#                 response_format={"type": "json_object"}
+#             )
+#             print("API Response:", completion)
+#         except Exception as e:
+#             print("Full error details:", str(e)) 
+        
+#         analysis_result = json.loads(completion.choices[0].message.content)
+#         print(f"Vision analysis took {time.time() - analysis_start:.2f}s")
+        
+#         # Return result
+#         final_result = {
+#             "component_type": component_type,
+#             "analysis_result": analysis_result,
+#             "processing_time": f"{time.time() - start_time:.2f}s"
+#         }
+        
+#         print(f"Total request time: {time.time() - start_time:.2f}s")
+#         return final_result
+        
+#     except Exception as e:
+#         print(f"Error in handler: {str(e)}")
+#         return {"error": str(e)}
+
+# print("Starting Vehicle Inspector server...")
+# print("Server ready!")
+
 async def async_handler(job):
     try:
         start_time = time.time()
         print("\n=== New Vehicle Inspection Request Started ===")
+        print("OpenAI Version:", openai.__version__)  # Debug: Print OpenAI version
         
-        # Get input from job
+        # Debug: Check API Key
+        api_key = os.getenv('OPENAI_API_KEY')
+        print("API Key present:", bool(api_key))
+        if not api_key:
+            raise ValueError("OpenAI API key is missing")
+        
+        # Get and validate input
         job_input = job["input"]
+        print("Received job input keys:", job_input.keys())  # Debug: Print available keys
         
-        # Validate input
+        # Validate required fields
         if "image" not in job_input or "component_type" not in job_input:
             raise ValueError("Missing required input: 'image' and 'component_type' required")
             
         component_type = job_input["component_type"]
+        print(f"Processing component type: {component_type}")  # Debug: Print component type
+        
         if component_type not in PROMPT_REGISTRY:
             raise ValueError(f"Unsupported component type: {component_type}")
 
-        # Get image
+        # Get image and validate
         image_base64 = job_input["image"]
+        print(f"Image data length: {len(image_base64)}")  # Debug: Print image data length
+        
+        if not image_base64:
+            raise ValueError("Empty image data received")
         
         # Vision API Analysis
         print("Starting vision analysis...")
         analysis_start = time.time()
         
+        # Construct messages with debug prints
+        system_prompt = PROMPT_REGISTRY[component_type]["system_prompt"]
+        print(f"System prompt length: {len(system_prompt)}")  # Debug: Print prompt length
+        
         messages = [
             {
                 "role": "system",
-                "content": PROMPT_REGISTRY[component_type]["system_prompt"]
+                "content": system_prompt
             },
             {
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_base64}",
-                        "detail": "high"
-                    }},
-                    {"type": "text", "text": "Analyze this image and provide the required JSON output."}
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}",
+                            "detail": "high"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": "Analyze this image and provide the required JSON output."
+                    }
                 ]
             }
         ]
-        try:
         
+        print("Messages structure constructed")  # Debug: Confirm messages structure
+        
+        # API call with enhanced error handling
+        try:
+            print("Attempting API call...")  # Debug: Mark start of API call
             completion = client.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
@@ -378,14 +478,28 @@ async def async_handler(job):
                 max_tokens=500,
                 response_format={"type": "json_object"}
             )
-            print("API Response:", completion)
+            print("API call successful")  # Debug: Mark successful API call
+            
+        except openai.APIError as api_err:
+            print(f"OpenAI API Error: {str(api_err)}")
+            print("Error response:", api_err.response if hasattr(api_err, 'response') else "No response details")
+            raise
         except Exception as e:
-            print("Full error details:", str(e)) 
+            print(f"Unexpected error during API call: {str(e)}")
+            raise
         
-        analysis_result = json.loads(completion.choices[0].message.content)
+        # Parse response
+        try:
+            analysis_result = json.loads(completion.choices[0].message.content)
+            print("Successfully parsed JSON response")  # Debug: Confirm JSON parsing
+        except json.JSONDecodeError as json_err:
+            print(f"JSON parsing error: {str(json_err)}")
+            print("Raw response content:", completion.choices[0].message.content)
+            raise
+        
         print(f"Vision analysis took {time.time() - analysis_start:.2f}s")
         
-        # Return result
+        # Prepare final result
         final_result = {
             "component_type": component_type,
             "analysis_result": analysis_result,
@@ -393,11 +507,15 @@ async def async_handler(job):
         }
         
         print(f"Total request time: {time.time() - start_time:.2f}s")
+        print("Final result prepared successfully")  # Debug: Confirm final preparation
+        
         return final_result
         
     except Exception as e:
         print(f"Error in handler: {str(e)}")
-        return {"error": str(e)}
+        print(f"Error type: {type(e).__name__}")  # Debug: Print error type
+        print(f"Error traceback: {traceback.format_exc()}")  # Debug: Print full traceback
+        return {"error": str(e), "error_type": type(e).__name__}
 
 print("Starting Vehicle Inspector server...")
 print("Server ready!")
