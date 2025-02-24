@@ -5,6 +5,8 @@ import os
 import time
 import json
 from dotenv import load_dotenv
+import openai
+print("OpenAI version:", openai.__version__)
 load_dotenv()
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -367,14 +369,18 @@ async def async_handler(job):
                 ]
             }
         ]
+        try:
         
-        completion = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            temperature=0.1,
-            max_tokens=500,
-            response_format={"type": "json_object"}
-        )
+            completion = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                temperature=0.1,
+                max_tokens=500,
+                response_format={"type": "json_object"}
+            )
+            print("API Response:", completion)
+        except Exception as e:
+            print("Full error details:", str(e)) 
         
         analysis_result = json.loads(completion.choices[0].message.content)
         print(f"Vision analysis took {time.time() - analysis_start:.2f}s")
