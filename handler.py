@@ -7,7 +7,7 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 # Initialize OpenAI client
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # %% Component Prompt Registry
 PROMPT_REGISTRY = {
