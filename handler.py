@@ -119,7 +119,7 @@ Return JSON: {
 }"""
     },
 
-    "Truck_mud_flaps": {
+    "truck_mud_flaps": {
         "system_prompt": """Analyze Truck mud flaps for safety and compliance:
 1. Proper height from ground
 2. Secure mounting
@@ -139,7 +139,7 @@ Return JSON: {
     "remark":"Remark"
 }"""
     },
-        "Trailer_mud_flaps": {
+        "trailer_mud_flaps": {
         "system_prompt": """Analyze Trailer mud flaps for safety and compliance:
 1. Proper height from ground
 2. Secure mounting
